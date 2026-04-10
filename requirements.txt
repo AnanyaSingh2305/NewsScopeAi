@@ -1,0 +1,16 @@
+flask
+flask-cors
+transformers
+torch
+openai
+python-dotenv
+requests
+googletrans==4.0.0-rc1
+gtts
+scikit-learn
+
+PyMuPDF
+Pillow
+pytesseract
+SpeechRecognition
+moviepy

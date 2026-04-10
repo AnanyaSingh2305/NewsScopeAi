@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NewsScope.AI 2.0 - Omni-Media Premium</title>
+    <link rel="stylesheet" href="/static/style.css">
+
+    <!-- External Libraries -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        #targetLang option {
+            background-color: #0d0f1a;
+            color: #00f0ff;
+            font-size: 1rem;
+            padding: 8px;
+        }
+
+        /* UI Overhaul Styles */
+        body, html, * {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .auth-modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center; backdrop-filter: blur(5px);
+        }
+        .auth-content {
+            background: linear-gradient(135deg, rgba(20,20,30,0.95), rgba(10,10,20,0.98));
+            border: 1px solid rgba(0,240,255,0.4); border-radius: 16px; padding: 3rem; width: 400px;
+            box-shadow: 0 0 50px rgba(0,240,255,0.2); position: relative;
+        }
+        .auth-input {
+            width: 100%; padding: 1rem; margin-bottom: 1.5rem; border-radius: 8px;
+            background: rgba(0,0,0,0.5); border: 1px solid var(--border-glass); color: #fff;
+            outline: none; font-size: 1rem; font-family: 'Outfit', sans-serif;
+        }
+        .auth-input:focus { border-color: rgba(0,240,255,0.8); }
+        .gradient-text {
+            background: linear-gradient(90deg, #fff, #00f0ff);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .hero-section {
+            min-height: 80vh; display: flex; flex-direction: column; justify-content: center;
+            align-items: center; text-align: center; padding-top: 5rem;
+        }
+        .pricing-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-top: 2rem;
+        }
+        .pricing-card {
+            background: rgba(10,10,20,0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 2rem;
+            transition: all 0.3s;
+        }
+        .pricing-card:hover { transform: translateY(-10px); border-color: rgba(0,240,255,0.5); box-shadow: 0 10px 40px rgba(0,240,255,0.1); }
+        .pricing-card.popular { border-color: rgba(0,240,255,0.8); box-shadow: 0 0 30px rgba(0,240,255,0.15); }
+    </style>
+</head>
+
+<body>
+    <!-- 3D Background -->
+    <canvas id="bg-canvas"></canvas>
+
+    <div class="container">
+        <!-- Dynamic Premium Header -->
+        <header style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 0;">
+            <div style="display: flex; align-items: center; gap: 3rem;">
+                <div>
+                    <div class="logo">NewsScope<span style="color: var(--accent);">.AI</span></div>
+                    <div style="color: var(--text-secondary); margin-top: 0.2rem; font-size: 0.85rem; letter-spacing: 1px;">OMNI-MEDIA INTELLIGENCE</div>
+                </div>
+                <nav style="display: flex; gap: 2rem; display: none;" id="mainNav">
+                    <!-- Nav visible on desktop -->
+                </nav>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <nav style="display: flex; gap: 2rem; margin-right: 2rem; font-weight: 500;">
+                    <a href="#features" style="color: #fff; text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#fff'">Features</a>
+                    <a href="#pricing" style="color: #fff; text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#fff'">Pricing</a>
+                    <a href="#dashboard" style="color: #fff; text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#fff'">Dashboard</a>
+                </nav>
+                <div id="userInfo" style="display: none; color: var(--accent); font-weight: 600; margin-right: 1rem;"></div>
+                <button class="secondary-btn" id="authBtn" onclick="toggleAuthModal()">
+                    <i class="fas fa-user-circle"></i> <span>Login</span>
+                </button>
+                <button class="secondary-btn" id="exportBtn" style="display: none;" onclick="window.print()">
+                    <i class="fas fa-file-export"></i> Export Report
+                </button>
+            </div>
+        </header>
+
+        <!-- Auth Modal -->
+        <div id="authModal" class="auth-modal">
+            <div class="auth-content">
+                <i class="fas fa-times" style="position: absolute; top: 1.5rem; right: 1.5rem; cursor: pointer; color: var(--text-secondary); font-size: 1.2rem;" onclick="closeAuthModal()"></i>
+                <h2 style="font-size: 2rem; margin-bottom: 0.5rem; color: #fff;">Welcome Back</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 2rem;">Sign in to access your Enterprise intelligence workspace.</p>
+                <input type="text" id="usernameInput" class="auth-input" placeholder="Username (e.g. admin)">
+                <input type="password" id="passwordInput" class="auth-input" placeholder="Password (e.g. admin)">
+                <button class="primary-btn" onclick="submitAuth()" style="width: 100%; border-radius: 8px;">Authenticate & Enter</button>
+                <div id="authError" style="color: var(--red-alert); margin-top: 1rem; text-align: center; display: none;">Invalid credentials</div>
+            </div>
+        </div>
+
+        <!-- HERO SECTION -->
+        <section id="hero" class="hero-section">
+            <h1 style="font-size: 4.5rem; font-weight: 700; color: #fff; line-height: 1.1; margin-bottom: 1.5rem; text-shadow: 0 0 30px rgba(0,240,255,0.4);">
+                Truth has no <span class="gradient-text">borders.</span>
+            </h1>
+            <p style="font-size: 1.2rem; color: var(--text-secondary); max-width: 600px; margin-bottom: 3rem; line-height: 1.6;">
+                The world's most advanced Omni-Media intelligence platform. Enterprise grade AI for Fact-Checking, Deepfake Analysis, and Neural Synthesis.
+            </p>
+            <div style="display: flex; gap: 1.5rem;">
+                <button class="primary-btn" onclick="document.getElementById('dashboard').scrollIntoView({behavior: 'smooth'})" style="font-size: 1.1rem; padding: 1rem 3rem; box-shadow: 0 10px 30px rgba(0,240,255,0.3);">
+                    Start Analyzing free
+                </button>
+                <button class="secondary-btn" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})" style="font-size: 1.1rem; padding: 1rem 3rem;">
+                    See Capabilities
+                </button>
+            </div>
+        </section>
+
+        <!-- Key Features Section -->
+        <section id="features" class="features-grid" style="padding: 6rem 0; border-top: 1px solid rgba(255,255,255,0.05);">
+            <div style="text-align: center; margin-bottom: 4rem;">
+                <h2 style="font-size: 2.5rem; font-weight: 600; color: #fff;">Key Features at a Glance</h2>
+                <p style="color: var(--text-secondary); margin-top: 1rem; font-size: 1.1rem;">Six powerful capabilities working in concert to deliver smarter, more inclusive news consumption.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                
+                <div class="glass-panel" onclick="document.getElementById('inputSection').scrollIntoView({behavior: 'smooth'})" style="padding: 1.5rem; text-align: left; background: rgba(10,10,20,0.6); border: 1px solid rgba(0,240,255,0.1); transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 10px 25px rgba(0,240,255,0.15)'; this.style.borderColor='rgba(0,240,255,0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'; this.style.borderColor='rgba(0,240,255,0.1)';">
+                    <i class="fas fa-shield-alt" style="font-size: 1.5rem; color: var(--accent); margin-bottom: 1rem;"></i>
+                    <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 0.5rem;">Fake News Detection</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.4;">AI-generated probability and trust scores for every article.</p>
+                </div>
+
+                <div class="glass-panel" onclick="document.getElementById('inputSection').scrollIntoView({behavior: 'smooth'})" style="padding: 1.5rem; text-align: left; background: rgba(10,10,20,0.6); border: 1px solid rgba(0,240,255,0.1); transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 10px 25px rgba(0,240,255,0.15)'; this.style.borderColor='rgba(0,240,255,0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'; this.style.borderColor='rgba(0,240,255,0.1)';">
+                    <i class="fas fa-balance-scale" style="font-size: 1.5rem; color: var(--accent); margin-bottom: 1rem;"></i>
+                    <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 0.5rem;">Bias Detection</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.4;">Left, right, or neutral classification for balanced perspectives.</p>
+                </div>
+
+                <div class="glass-panel" onclick="document.getElementById('inputSection').scrollIntoView({behavior: 'smooth'})" style="padding: 1.5rem; text-align: left; background: rgba(10,10,20,0.6); border: 1px solid rgba(0,240,255,0.1); transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 10px 25px rgba(0,240,255,0.15)'; this.style.borderColor='rgba(0,240,255,0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'; this.style.borderColor='rgba(0,240,255,0.1)';">
+                    <i class="fas fa-bolt" style="font-size: 1.5rem; color: var(--accent); margin-bottom: 1rem;"></i>
+                    <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 0.5rem;">Smart Summarisation</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.4;">Crisp, accurate summaries that save time without losing context.</p>
+                </div>
+
+                <div class="glass-panel" onclick="document.getElementById('inputSection').scrollIntoView({behavior: 'smooth'})" style="padding: 1.5rem; text-align: left; background: rgba(10,10,20,0.6); border: 1px solid rgba(0,240,255,0.1); transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 10px 25px rgba(0,240,255,0.15)'; this.style.borderColor='rgba(0,240,255,0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'; this.style.borderColor='rgba(0,240,255,0.1)';">
+                    <i class="fas fa-video" style="font-size: 1.5rem; color: var(--accent); margin-bottom: 1rem;"></i>
+                    <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 0.5rem;">Text-to-Video</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.4;">AI avatars and voice narration bring news articles to life visually.</p>
+                </div>
+
+                <div class="glass-panel" onclick="document.getElementById('inputSection').scrollIntoView({behavior: 'smooth'})" style="padding: 1.5rem; text-align: left; background: rgba(10,10,20,0.6); border: 1px solid rgba(0,240,255,0.1); transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 10px 25px rgba(0,240,255,0.15)'; this.style.borderColor='rgba(0,240,255,0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'; this.style.borderColor='rgba(0,240,255,0.1)';">
+                    <i class="fas fa-globe" style="font-size: 1.5rem; color: var(--accent); margin-bottom: 1rem;"></i>
+                    <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 0.5rem;">Multi-language Support</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.4;">Translate and consume news in your preferred language seamlessly.</p>
+                </div>
+
+                <div class="glass-panel" onclick="document.getElementById('inputSection').scrollIntoView({behavior: 'smooth'})" style="padding: 1.5rem; text-align: left; background: rgba(10,10,20,0.6); border: 1px solid rgba(0,240,255,0.1); transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 10px 25px rgba(0,240,255,0.15)'; this.style.borderColor='rgba(0,240,255,0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'; this.style.borderColor='rgba(0,240,255,0.1)';">
+                    <i class="fas fa-universal-access" style="font-size: 1.5rem; color: var(--accent); margin-bottom: 1rem;"></i>
+                    <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 0.5rem;">Accessibility Suite</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.4;">Voice input, TTS output, subtitles, and clean UI for all users.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing Section -->
+        <section id="pricing" style="padding: 6rem 0; border-top: 1px solid rgba(255,255,255,0.05);">
+            <div style="text-align: center; margin-bottom: 4rem;">
+                <h2 style="font-size: 2.5rem; font-weight: 600; color: #fff;">Scalable Intelligence Plans</h2>
+                <p style="color: var(--text-secondary); margin-top: 1rem; font-size: 1.1rem;">Choose the perfect computational tier for your media processing needs.</p>
+            </div>
+            
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 0.5rem;">Basic Fact Checker</h3>
+                    <div style="font-size: 3rem; font-weight: 700; color: var(--accent); margin-bottom: 1rem;">$0<span style="font-size: 1rem; color: var(--text-secondary);">/mo</span></div>
+                    <ul style="list-style: none; color: var(--text-secondary); margin-bottom: 2rem; display: flex; flex-direction: column; gap: 0.8rem;">
+                        <li><i class="fas fa-check" style="color: var(--accent); width: 25px;"></i> 100 Scans / month</li>
+                        <li><i class="fas fa-check" style="color: var(--accent); width: 25px;"></i> NLP Sentiment Engine</li>
+                        <li><i class="fas fa-check" style="color: var(--accent); width: 25px;"></i> DuckDuckGo Scraping</li>
+                        <li><i class="fas fa-times" style="color: var(--red-alert); width: 25px;"></i> Video Synthesis</li>
+                    </ul>
+                    <button class="secondary-btn" style="width: 100%; border-radius: 8px;">Current Plan</button>
+                </div>
+                
+                <div class="pricing-card popular" style="position: relative;">
+                    <div style="position: absolute; top: -12px; right: 2rem; background: var(--accent); color: #000; padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 0.8rem;">MOST POPULAR</div>
+                    <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 0.5rem;">Premium Media Suite</h3>
+                    <div style="font-size: 3rem; font-weight: 700; color: #fff; margin-bottom: 1rem;">$49<span style="font-size: 1rem; color: var(--text-secondary);">/mo</span></div>
+                    <ul style="list-style: none; color: var(--text-secondary); margin-bottom: 2rem; display: flex; flex-direction: column; gap: 0.8rem;">
+                        <li><i class="fas fa-check" style="color: var(--accent); width: 25px;"></i> 5,000 Scans / month</li>
+                        <li><i class="fas fa-check" style="color: var(--accent); width: 25px;"></i> Official Google Fact Check API</li>
+                        <li><i class="fas fa-check" style="color: var(--accent); width: 25px;"></i> Neural Deepfake Analyzer</li>
+                        <li><i class="fas fa-check" style="color: var(--accent); width: 25px;"></i> 120min Text-To-Video</li>
+                    </ul>
+                    <button class="primary-btn" style="width: 100%; border-radius: 8px;">Upgrade Now</button>
+                </div>
+
+                <div class="pricing-card">
+                    <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 0.5rem;">Enterprise Custom AI</h3>
+                    <div style="font-size: 3rem; font-weight: 700; color: #fff; margin-bottom: 1rem;">$299<span style="font-size: 1rem; color: var(--text-secondary);">/mo</span></div>
+                    <ul style="list-style: none; color: var(--text-secondary); margin-bottom: 2rem; display: flex; flex-direction: column; gap: 0.8rem;">
+                        <li><i class="fas fa-check" style="color: var(--accent); width: 25px;"></i> Unlimited Workspaces</li>
+                        <li><i class="fas fa-check" style="color: var(--accent); width: 25px;"></i> NewsAPI Enterprise Index</li>
+                        <li><i class="fas fa-check" style="color: var(--accent); width: 25px;"></i> Bulk PDF Ingestion</li>
+                        <li><i class="fas fa-check" style="color: var(--accent); width: 25px;"></i> Dedicated Node Engine</li>
+                    </ul>
+                    <button class="secondary-btn" style="width: 100%; border-radius: 8px;">Contact Sales</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- DASHBOARD SECTION -->
+        <section class="glass-panel input-section" id="dashboard" style="margin: 4rem 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <h2 style="font-size: 1.6rem; font-weight: 500;">Intelligence Ingestion Portal</h2>
+                <div class="meta-stats" id="metaStats">
+                    <span id="wordCount">0 words</span>
+                    <span>•</span>
+                    <span id="readTime">0 min read</span>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 200px; gap: 1rem;">
+                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('mediaInput').click()"
+                    style="background: rgba(0,240,255,0.05); border: 2px dashed rgba(0,240,255,0.3); border-radius: 12px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s ease;">
+                    <i class="fas fa-cloud-upload-alt"
+                        style="font-size: 2.5rem; color: var(--accent); margin-bottom: 1rem;"></i>
+                    <h3 style="border: none; justify-content: center; font-size: 1.1rem; color: #fff;">Drop Media (PDF,
+                        Image, Video) or Click to Browse</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem;"
+                        id="fileNameDisplay">Supports .pdf, .jpg, .png, .mp4</p>
+                    <input type="file" id="mediaInput" style="display: none;" accept=".pdf,image/*,video/*"
+                        onchange="handleFileSelect(this)">
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <div
+                        style="background: rgba(0,0,0,0.4); padding: 1rem; border-radius: 12px; border: 1px solid var(--border-glass);">
+                        <label
+                            style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;">TARGET
+                            LANGUAGE</label>
+                        <select id="targetLang"
+                            style="width: 100%; background: rgba(0,0,0,0.5); color: #00f0ff; border: 1px solid var(--border-glass); padding: 0.5rem; border-radius: 6px; outline: none; cursor: pointer;">
+                            <option value="en">English</option>
+                            <option value="hi">Hindi (हिंदी)</option>
+                            <option value="bn">Bengali (বাংলা)</option>
+                            <option value="te">Telugu (తెలుగు)</option>
+                            <option value="mr">Marathi (मराठी)</option>
+                            <option value="ta">Tamil (தமிழ்)</option>
+                            <option value="ur">Urdu (اردو)</option>
+                            <option value="gu">Gujarati (ગુજરાતી)</option>
+                            <option value="kn">Kannada (ಕನ್ನಡ)</option>
+                            <option value="ml">Malayalam (മലയാളം)</option>
+                            <option value="pa">Punjabi (ਪੰਜਾਬੀ)</option>
+                            <option value="es">Spanish</option>
+                            <option value="fr">French</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 1rem; margin: 1rem 0;">
+                <div style="height: 1px; flex: 1; background: var(--border-glass);"></div>
+                <span style="color: var(--text-secondary); font-size: 0.8rem; letter-spacing: 2px;">OR PASTE TEXT
+                    DIRECTLY</span>
+                <div style="height: 1px; flex: 1; background: var(--border-glass);"></div>
+            </div>
+
+            <textarea id="articleText" placeholder="Paste full article text here to initiate deep scan..."
+                oninput="updateMetaStats()" style="min-height: 100px;"></textarea>
+            <button class="primary-btn" onclick="analyzeMedia()">Initiate Omni-Analysis</button>
+        </section>
+
+        <!-- Premium Loader -->
+        <div id="loader" class="loader-wrapper">
+            <div class="spinner"></div>
+            <div class="loader-text" id="loaderText">Processing neural analysis...</div>
+        </div>
+
+        <section id="results" class="dashboard-grid">
+
+            <!-- DEEPFAKE VISUALIZER (NEW) -->
+            <div class="card result-card" id="dfCard"
+                style="display: none; grid-column: 1 / -1; background: linear-gradient(135deg, rgba(20,20,30,0.8), rgba(10,10,20,0.9)); border: 1px solid rgba(0,240,255,0.3);">
+                <h3><i class="fas fa-microchip" style="margin-right: 8px; color: var(--accent);"></i> Deepfake /
+                    Synthetic Media Detector</h3>
+                <div style="display: flex; align-items: center; justify-content: space-around;">
+                    <div style="text-align: center;">
+                        <span style="font-size: 0.9rem; color: var(--text-secondary);">CONFIDENCE PROFILE</span>
+                        <div id="dfScore"
+                            style="font-size: 3rem; font-weight: 700; color: #fff; text-shadow: 0 0 15px rgba(0,240,255,0.5);">
+                            --%</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <span style="font-size: 0.9rem; color: var(--text-secondary);">CLASSIFICATION</span>
+                        <div id="dfLabel"
+                            style="font-size: 1.5rem; font-weight: 700; margin-top: 0.5rem; padding: 0.5rem 1.5rem; border-radius: 8px; border: 1px solid var(--border-glass);">
+                            --</div>
+                    </div>
+                </div>
+                <p id="dfExtracted"
+                    style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary); padding: 1rem; background: rgba(0,0,0,0.5); border-radius: 8px; max-height: 100px; overflow-y: auto;">
+                    Extracted OCR / Transcript will appear here.
+                </p>
+            </div>
+
+            <div class="card result-card">
+                <h3><i class="fas fa-shield-alt" style="margin-right: 8px; color: var(--accent);"></i> Fake News Engine
+                </h3>
+                <div class="gauge-container">
+                    <div id="fnScore" class="score">--%</div>
+                    <div id="fnLabel" class="label">PENDING</div>
+                </div>
+            </div>
+
+            <div class="card result-card">
+                <h3><i class="fas fa-balance-scale" style="margin-right: 8px; color: var(--accent);"></i> Political Bias
+                </h3>
+                <div class="bias-slider">
+                    <div id="biasDot" class="bias-dot" style="left: 50%;"></div>
+                </div>
+                <div class="bias-labels">
+                    <span>LEFT</span><span>CENTER</span><span>RIGHT</span>
+                </div>
+                <h4 id="biasTitle" style="margin-top: 1.5rem; text-align: center; font-size: 1.3rem;">CENTER</h4>
+                <div id="biasTags" class="tag-cloud" style="margin-top: 1rem;"></div>
+            </div>
+
+            <!-- New Chart Section -->
+            <div class="card result-card"
+                style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <div>
+                    <h3><i class="fas fa-brain" style="margin-right: 8px; color: var(--accent);"></i> AI Summarization &
+                        Neural Audio</h3>
+                    <div
+                        style="font-size:0.85rem; color:var(--text-secondary); margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                        <span>Data Compression Ratio: <strong id="compRatio"
+                                style="color: var(--accent);">--%</strong></span>
+                        <button id="ttsBtn" onclick="playAudio()" class="secondary-btn"
+                            style="padding: 0.4rem 1rem; font-size: 0.8rem; display: none;">
+                            <i class="fas fa-play"></i> Play Translated Audio
+                        </button>
+                    </div>
+
+                    <div id="audioPlayerContainer"
+                        style="display: none; margin-bottom: 1.5rem; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px; border: 1px solid var(--border-glass);">
+                        <span id="audioStatus"
+                            style="font-size: 0.85rem; color: var(--accent); display: block; margin-bottom: 5px;">Synchronized
+                            Neural Voice Track Ready</span>
+                        <audio id="audioPlayer" controls style="width: 100%; height: 35px;"></audio>
+                    </div>
+
+                    <ul id="summaryBullets" class="bullets">
+                    </ul>
+                </div>
+                <div>
+                    <h3><i class="fas fa-chart-radar" style="margin-right: 8px; color: var(--accent);"></i> Credibility
+                        Breakdown</h3>
+                    <div class="chart-container">
+                        <canvas id="credibilityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card result-card"
+                style="grid-column: 1 / -1; align-items: center; justify-content: center; padding: 3rem;">
+                <h3 style="border: none;"><i class="fas fa-video" style="margin-right: 8px; color: var(--accent);"></i>
+                    Avatar Video Synthesis</h3>
+                <p style="color: var(--text-secondary); text-align: center; max-width: 600px; margin-bottom: 1.5rem;">
+                    Convert the translated multimedia analysis into a professional news broadcast using our neural
+                    avatar engine.
+                </p>
+                <button class="primary-btn" onclick="generateVideo()" id="vidBtn" style="margin: 0;">Generate Presenter
+                    Video</button>
+
+                <div id="vidProgress"
+                    style="display: none; align-items: center; gap: 1rem; color: var(--accent); margin-top: 2rem;">
+                    <div class="spinner" style="width: 30px; height: 30px; border-width: 2px;"></div>
+                    <span id="vidStatusText">Initializing Video Synthesis Pipeline...</span>
+                </div>
+                <video id="videoPlayer" width="800"
+                    style="display: none; margin-top: 2rem; border-radius: 16px; border: 1px solid var(--border-glass); box-shadow: 0 10px 40px rgba(0,0,0,0.5);"
+                    controls></video>
+            </div>
+        </section>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // ----------------------------------------------------
+        // 1. AUTHENTICATION LOGIC (MOCK STATE)
+        // ----------------------------------------------------
+        function toggleAuthModal() {
+            document.getElementById('authModal').style.display = 'flex';
+        }
+        function closeAuthModal() {
+            document.getElementById('authModal').style.display = 'none';
+            document.getElementById('authError').style.display = 'none';
+        }
+
+        async function submitAuth() {
+            const user = document.getElementById('usernameInput').value;
+            const pass = document.getElementById('passwordInput').value;
+            
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+                const data = await res.json();
+                if(data.success) {
+                    localStorage.setItem('ns_token', data.token);
+                    localStorage.setItem('ns_user', data.user);
+                    closeAuthModal();
+                    checkAuthState();
+                    // Scroll to dashboard on successful login
+                    document.getElementById('dashboard').scrollIntoView({behavior: 'smooth'});
+                } else {
+                    document.getElementById('authError').style.display = 'block';
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            localStorage.removeItem('ns_token');
+            localStorage.removeItem('ns_user');
+            checkAuthState();
+        }
+
+        function checkAuthState() {
+            const user = localStorage.getItem('ns_user');
+            const authBtn = document.getElementById('authBtn');
+            const userInfo = document.getElementById('userInfo');
+            
+            if(user) {
+                authBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> <span>Logout</span>';
+                authBtn.onclick = logout;
+                userInfo.style.display = 'block';
+                userInfo.innerHTML = `Welcome, ${user}`;
+            } else {
+                authBtn.innerHTML = '<i class="fas fa-user-circle"></i> <span>Login</span>';
+                authBtn.onclick = toggleAuthModal;
+                userInfo.style.display = 'none';
+            }
+        }
+
+        // Initialize state on load
+        document.addEventListener("DOMContentLoaded", checkAuthState);
+
+        // ----------------------------------------------------
+        // 2. ADVANCED THREE.JS AESTHETIC BACKGROUND
+        // ----------------------------------------------------
+        const canvas = document.getElementById('bg-canvas');
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 200;
+
+        const universe = new THREE.Group();
+        scene.add(universe);
+
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 1500;
+        const posArray = new Float32Array(particlesCount * 3);
+        for (let i = 0; i < particlesCount * 3; i++) posArray[i] = (Math.random() - 0.5) * 800;
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const material = new THREE.PointsMaterial({ size: 1.0, color: 0x00f0ff, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending });
+        const particlesMesh = new THREE.Points(particlesGeometry, material);
+        universe.add(particlesMesh);
+
+        const mainGeo = new THREE.TorusKnotGeometry(45, 12, 200, 32);
+        
+        // Custom Shader Material for a "Digital Neural Network" look instead of standard wireframe
+        const edgeMat = new THREE.MeshBasicMaterial({ 
+            color: 0x00f0ff, 
+            wireframe: true, 
+            transparent: true, 
+            opacity: 0.08 
+        });
+        const coreShape = new THREE.Mesh(mainGeo, edgeMat);
+        universe.add(coreShape);
+
+        // Map glowing points to the Torus Knot vertices to look like data nodes
+        const corePointsMat = new THREE.PointsMaterial({ 
+            size: 1.8, 
+            color: 0x00f0ff, 
+            transparent: true, 
+            opacity: 0.6,
+            blending: THREE.AdditiveBlending 
+        });
+        const corePoints = new THREE.Points(mainGeo, corePointsMat);
+        universe.add(corePoints);
+
+        let mouseX = 0; let mouseY = 0;
+        document.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        const clock = new THREE.Clock();
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+            const elapsedTime = clock.getElapsedTime();
+            universe.rotation.y = elapsedTime * 0.03;
+            universe.rotation.z = elapsedTime * 0.01;
+            coreShape.rotation.x = elapsedTime * -0.05;
+            coreShape.rotation.y = elapsedTime * 0.08;
+            corePoints.rotation.x = elapsedTime * -0.05;
+            corePoints.rotation.y = elapsedTime * 0.08;
+
+            camera.position.x += (mouseX * 40 - camera.position.x) * 0.02;
+            camera.position.y += (mouseY * 40 - camera.position.y) * 0.02;
+            camera.lookAt(scene.position);
+            renderer.render(scene, camera);
+        }
+        animate3D();
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+
+        // ----------------------------------------------------
+        // 2. UI LOGIC & DRAG N DROP
+        // ----------------------------------------------------
+        let currentText = "";
+        let parsedSummaryObj = null;
+        let credChart = null;
+        let generatedAudioUrl = null;
+        let selectedFile = null;
+
+        const uploadZone = document.getElementById('uploadZone');
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.style.background = 'rgba(0, 240, 255, 0.15)';
+            uploadZone.style.transform = 'scale(1.02)';
+        });
+
+        uploadZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadZone.style.background = 'rgba(0, 240, 255, 0.05)';
+            uploadZone.style.transform = 'scale(1)';
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.style.background = 'rgba(0, 240, 255, 0.05)';
+            uploadZone.style.transform = 'scale(1)';
+            if (e.dataTransfer.files.length) {
+                selectedFile = e.dataTransfer.files[0];
+                document.getElementById('fileNameDisplay').innerText = `Selected: ${selectedFile.name}`;
+                document.getElementById('fileNameDisplay').style.color = '#fff';
+            }
+        });
+
+        function handleFileSelect(input) {
+            if (input.files.length) {
+                selectedFile = input.files[0];
+                document.getElementById('fileNameDisplay').innerText = `Selected: ${selectedFile.name}`;
+                document.getElementById('fileNameDisplay').style.color = '#fff';
+            }
+        }
+
+        gsap.from(".logo", { y: -50, opacity: 0, duration: 1, ease: "power3.out" });
+        gsap.from(".input-section", { y: 50, opacity: 0, duration: 1, delay: 0.3, ease: "power3.out" });
+
+        function updateMetaStats() {
+            const text = document.getElementById('articleText').value.trim();
+            const wordCount = text ? text.split(/\s+/).length : 0;
+            const readTime = Math.ceil(wordCount / 200);
+            document.getElementById('wordCount').innerText = `${wordCount} words`;
+            document.getElementById('readTime').innerText = `${readTime} min read`;
+        }
+
+        function typeWriterEffect(element, text, speed = 10) {
+            element.innerHTML = '';
+            let i = 0;
+            return new Promise(resolve => {
+                function type() {
+                    if (i < text.length) {
+                        element.innerHTML += text.charAt(i);
+                        i++;
+                        setTimeout(type, speed);
+                    } else {
+                        resolve();
+                    }
+                }
+                type();
+            });
+        }
+
+        async function analyzeMedia() {
+            currentText = document.getElementById('articleText').value;
+
+            if (!currentText.trim() && !selectedFile) {
+                alert("Please paste text or upload a media file.");
+                return;
+            }
+
+            gsap.to(".input-section", { scale: 0.95, opacity: 0.7, duration: 0.5, display: 'none' });
+
+            document.getElementById('loader').style.display = 'flex';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('videoPlayer').style.display = 'none';
+            document.getElementById('vidBtn').style.display = 'block';
+            document.getElementById('exportBtn').style.display = 'none';
+            document.getElementById('ttsBtn').style.display = 'none';
+            document.getElementById('audioPlayerContainer').style.display = 'none';
+            document.getElementById('dfCard').style.display = 'none';
+
+            const loaderTexts = ["Parsing multimedia segments...", "Extracting OCR & Audio...", "Simulating deepfake detection...", "Running NLP translations...", "Synthesizing output..."];
+            let textIdx = 0;
+            const textInterval = setInterval(() => {
+                textIdx = (textIdx + 1) % loaderTexts.length;
+                document.getElementById('loaderText').innerText = loaderTexts[textIdx];
+            }, 2500);
+
+            const targetLang = document.getElementById('targetLang').value;
+
+            try {
+                let data;
+
+                if (selectedFile) {
+                    // Send as Multipart FormData to /api/upload-media
+                    const formData = new FormData();
+                    formData.append("file", selectedFile);
+                    formData.append("target_lang", targetLang);
+
+                    const res = await fetch('/api/upload-media', { method: 'POST', body: formData });
+                    data = await res.json();
+                } else {
+                    // Standard Text API
+                    const payload = { text: currentText, target_lang: targetLang };
+                    const res = await fetch('/api/analyze', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    data = await res.json();
+                }
+
+                clearInterval(textInterval);
+                if (data.error) throw new Error(data.error || data.message);
+
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('results').style.display = 'grid';
+                document.getElementById('exportBtn').style.display = 'block';
+
+                gsap.from(".result-card", { y: 50, opacity: 0, duration: 0.8, stagger: 0.2, ease: "power3.out" });
+
+                // If deepfake data exists
+                if (data.media_profile && data.media_profile.deepfake_analysis) {
+                    const df = data.media_profile.deepfake_analysis;
+                    document.getElementById('dfCard').style.display = 'block';
+                    document.getElementById('dfScore').innerText = `${df.confidence}%`;
+                    document.getElementById('dfScore').style.color = df.is_fake ? "var(--red-alert)" : "var(--green-safe)";
+                    document.getElementById('dfLabel').innerText = df.label;
+                    document.getElementById('dfLabel').style.borderColor = df.is_fake ? "var(--red-alert)" : "var(--green-safe)";
+                    document.getElementById('dfLabel').style.color = df.is_fake ? "var(--red-alert)" : "var(--green-safe)";
+
+                    document.getElementById('dfExtracted').innerText = `Extracted Media Transcript: "${data.media_profile.extracted_text}"`;
+                }
+
+                // AI Data bindings
+                const fn = data.analysis ? data.analysis.fake_news : data.fake_news;
+                const bias = data.analysis ? data.analysis.bias : data.bias;
+                const summ = data.analysis ? data.analysis.summarization : data.summarization;
+
+                // Note: the backend returned target language audio
+                generatedAudioUrl = data.audio_url || null;
+
+                // Rest of UI mapping
+                document.getElementById('fnScore').innerText = `${Math.round(fn.confidence * 100)}%`;
+                const labelEl = document.getElementById('fnLabel');
+                labelEl.innerText = fn.label;
+                labelEl.className = 'label ' + fn.label.toLowerCase();
+
+                document.getElementById('biasTitle').innerText = bias.bias_label;
+                let dotPos = 50;
+                if (bias.bias_label === 'LEFT') dotPos = 10;
+                if (bias.bias_label === 'RIGHT') dotPos = 90;
+                document.getElementById('biasDot').style.left = `${dotPos}%`;
+
+                const tagsCont = document.getElementById('biasTags');
+                tagsCont.innerHTML = (bias.bias_indicators || []).map(t => `<span class="tag">${t}</span>`).join('');
+
+                parsedSummaryObj = summ;
+                document.getElementById('compRatio').innerText = `${summ.compression_ratio}%`;
+                const list = document.getElementById('summaryBullets');
+                list.innerHTML = '';
+
+                const bullets = summ.bullets || [summ.summary];
+                bullets.forEach(async (b, index) => {
+                    const li = document.createElement('li');
+                    list.appendChild(li);
+                    setTimeout(() => {
+                        typeWriterEffect(li, b, 10);
+                        if (index === bullets.length - 1) {
+                            setTimeout(() => {
+                                if (generatedAudioUrl) {
+                                    document.getElementById('ttsBtn').style.display = 'block';
+                                    gsap.from('#ttsBtn', { opacity: 0, scale: 0.8, duration: 0.5 });
+                                }
+                            }, b.length * 10);
+                        }
+                    }, index * 800);
+                });
+
+                renderChart(fn.confidence * 100, bias.bias_label);
+
+            } catch (err) {
+                clearInterval(textInterval);
+                alert("Analysis failed: " + err);
+                document.getElementById('loader').style.display = 'none';
+                gsap.to(".input-section", { display: 'flex', scale: 1, opacity: 1, duration: 0.5 });
+            }
+        }
+
+        // PLAY PRE-GENERATED AUDIO
+        function playAudio() {
+            const btn = document.getElementById('ttsBtn');
+            const cont = document.getElementById('audioPlayerContainer');
+            const player = document.getElementById('audioPlayer');
+
+            btn.style.display = 'none';
+            cont.style.display = 'block';
+            player.src = generatedAudioUrl;
+            player.style.display = 'block';
+            player.play();
+        }
+
+        function renderChart(confidence, biasLabel) {
+            const ctx = document.getElementById('credibilityChart').getContext('2d');
+            let objectivity = biasLabel === 'CENTER' ? 85 : 40;
+            let factual = confidence;
+            let logicalConsistency = Math.min(100, factual + 15);
+            let emotionalTone = biasLabel !== 'CENTER' ? 70 : 30;
+
+            if (credChart) credChart.destroy();
+
+            credChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Factuality', 'Objectivity', 'Logistics', 'Emotional Tone', 'Sources'],
+                    datasets: [{
+                        label: 'Article Profile',
+                        data: [factual, objectivity, logicalConsistency, emotionalTone, 60],
+                        backgroundColor: 'rgba(0, 240, 255, 0.2)',
+                        borderColor: 'rgba(0, 240, 255, 1)',
+                        pointBackgroundColor: '#ff0055',
+                        borderWidth: 2,
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { r: { ticks: { display: false, min: 0, max: 100 } } }, plugins: { legend: { display: false } } }
+            });
+        }
+
+        async function generateVideo() {
+            const btn = document.getElementById('vidBtn');
+            const prog = document.getElementById('vidProgress');
+            const statusTxt = document.getElementById('vidStatusText');
+
+            gsap.to(btn, { opacity: 0, height: 0, padding: 0, duration: 0.5, onComplete: () => btn.style.display = 'none' });
+            prog.style.display = 'flex';
+            gsap.fromTo(prog, { opacity: 0 }, { opacity: 1, duration: 0.5 });
+            statusTxt.innerText = "Initializing Multi-language Video Synthesis Pipeline...";
+
+            try {
+                const summaryText = parsedSummaryObj.bullets ? parsedSummaryObj.bullets.join('. ') : parsedSummaryObj.summary;
+                const targetLang = document.getElementById('targetLang').value;
+
+                // Hitting generate-video, optionally we'd pass targetLang to translate text if we didn't already
+                // Since summaryText is already translated for Media pipeline, it encodes accurately.
+                const res = await fetch('/api/generate-video', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: summaryText, target_lang: targetLang })
+                });
+
+                const data = await res.json();
+                if (data.job_id) {
+                    pollVideo(data.job_id, statusTxt);
+                } else {
+                    throw new Error("Job launch failed");
+                }
+            } catch (e) {
+                alert("Video generation failed: " + e);
+                btn.style.display = 'block';
+                gsap.to(btn, { opacity: 1, height: 'auto', padding: '1rem 2.5rem', duration: 0.5 });
+                prog.style.display = 'none';
+            }
+        }
+
+        async function pollVideo(jobId, statusTxt) {
+            const prog = document.getElementById('vidProgress');
+            let pollTicks = 0;
+            const messages = ["Rendering translated frames...", "Syncing neural lips to new language...", "Applying post-processing..."];
+
+            const interval = setInterval(async () => {
+                pollTicks++;
+                if (pollTicks % 2 === 0) statusTxt.innerText = messages[(pollTicks / 2) % messages.length];
+
+                try {
+                    const res = await fetch(`/api/video-status/${jobId}`);
+                    const data = await res.json();
+
+                    if (data.status === 'done') {
+                        clearInterval(interval);
+                        prog.style.display = 'none';
+                        const vp = document.getElementById('videoPlayer');
+                        vp.src = data.video_url;
+                        vp.style.display = 'block';
+
+                        gsap.fromTo(vp, { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.8, ease: "back.out(1.7)" });
+                        vp.play();
+                    } else if (data.status === 'error') {
+                        clearInterval(interval);
+                        statusTxt.innerText = "Video synthesis encountered an error.";
+                        statusTxt.style.color = "var(--red-alert)";
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+
+</html>
