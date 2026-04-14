@@ -1,4 +1,4 @@
-# 🚀 NEWSLENS.AI
+# 🚀 NEWSSCOPEAI
 
 ## 💡 Overview
 
