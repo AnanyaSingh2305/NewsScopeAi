@@ -1,0 +1,17 @@
+.git
+.gitignore
+.env
+.env.local
+.vscode
+__pycache__
+*.pyc
+.pytest_cache
+.coverage
+node_modules
+npm-debug.log
+.DS_Store
+*.md
+docker-compose.yml
+tests/
+.github/
+.dockerignore

@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: newslensai
+    runtime: docker
+    region: oregon
+    plan: standard
+    
+    # Environment variables
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: D_ID_API_KEY
+        sync: false
+      - key: NEWSAPI_KEY
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+    
+    # Build configuration
+    dockerfilePath: ./Dockerfile
+    
+    # Health check
+    healthCheckPath: /api/health
+    
+    # Network configuration
+    numInstances: 1
+    autoDeploy: true
